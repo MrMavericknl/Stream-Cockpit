@@ -1,3 +1,10 @@
+Example screenshots: 
+<img width="1756" height="1134" alt="image" src="https://github.com/user-attachments/assets/bde4966c-2148-4fce-a0a2-9263bac79639" />
+
+<img width="877" height="887" alt="image" src="https://github.com/user-attachments/assets/a875f4c7-2821-4f13-a09b-1edbb0bc2452" />
+
+
+
 # 🎮 Stream Cockpit v2.3.1 — Complete User Guide
 
 **By Mr. Maverick** · Stream Cockpit v2.0
