@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OBS Deck</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0c0c0e;--bg2:#111113;--surface:#17171a;--surface2:#1e1e22;--surface3:#26262c;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --text:#eeeeee;--text2:#888899;--text3:#55556a;
+  --purple:#8b5cf6;--purple-light:#a78bfa;--purple-glow:rgba(139,92,246,0.18);
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#38bdf8;
+  --elgato:#00b4d8;
+}
+body{
+  font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);
+  height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none;
+}
+
+/* ── TITLEBAR ── */
+#titlebar{
+  height:34px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 10px;gap:8px;
+  -webkit-app-region:drag;flex-shrink:0;position:relative;
+}
+#titlebar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--purple) 40%,var(--purple-light) 60%,transparent);opacity:0.4;}
+.tb-icon{width:18px;height:18px;background:linear-gradient(135deg,#e05c5c,#ff8c42);
+  border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tb-icon svg{width:10px;height:10px;fill:white;}
+.tb-title{font-family:'Geist Mono',monospace;font-size:9px;font-weight:600;
+  letter-spacing:0.16em;text-transform:uppercase;color:var(--text3);flex:1;}
+.tb-close{-webkit-app-region:no-drag;background:transparent;border:none;color:var(--text3);
+  cursor:pointer;font-size:13px;padding:3px 6px;border-radius:4px;transition:all 0.15s;}
+.tb-close:hover{background:rgba(239,68,68,0.18);color:var(--red);}
+
+/* ── CONNECTION BAR ── */
+#connBar{
+  padding:7px 8px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:5px;flex-shrink:0;
+}
+.conn-row{display:flex;gap:5px;align-items:center;}
+.conn-input{
+  flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:6px;
+  padding:5px 8px;font-size:10px;color:var(--text);font-family:'Geist Mono',monospace;outline:none;
+  transition:border-color 0.15s;
+}
+.conn-input:focus{border-color:var(--purple);}
+.conn-btn{
+  background:var(--purple);border:none;border-radius:6px;color:white;
+  font-size:10px;font-weight:700;padding:5px 11px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:opacity 0.15s;white-space:nowrap;letter-spacing:0.02em;
+}
+.conn-btn:hover{opacity:0.85;}
+.conn-status{display:flex;align-items:center;gap:5px;font-size:9px;font-family:'Geist Mono',monospace;}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:var(--surface3);flex-shrink:0;transition:all 0.3s;}
+.conn-dot.connected{background:var(--green);box-shadow:0 0 5px var(--green);}
+.conn-dot.connecting{background:var(--amber);animation:pulse 1s infinite;}
+.conn-dot.error{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.conn-label{color:var(--text3);}
+
+/* ── SCROLL AREA ── */
+#scrollArea{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px;background:#080a0f;
+  scrollbar-width:thin;scrollbar-color:var(--surface3) transparent;}
+#scrollArea::-webkit-scrollbar{width:3px;}
+#scrollArea::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px;}
+
+/* ── SECTION ── */
+.section{margin-bottom:8px;}
+.section-lbl{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.18em;
+  color:var(--text3);font-family:'Geist Mono',monospace;padding:0 2px 5px;}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:0;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:7px;
+  padding:6px 4px;text-align:center;}
+.stat-val{font-size:13px;font-weight:700;font-family:'Geist Mono',monospace;color:var(--text);line-height:1;}
+.stat-val.green{color:var(--green);}
+.stat-val.red{color:var(--red);}
+.stat-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-top:3px;}
+
+/* ── STREAM DECK STYLE ── */
+.stream-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px;}
+.controls-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+
+/* Base deck key */
+.ctrl-btn{
+  border:none;border-radius:10px;padding:0;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  transition:transform 0.08s,filter 0.08s,box-shadow 0.08s;
+  position:relative;overflow:hidden;
+  height:70px;
+  box-shadow:0 4px 0 rgba(0,0,0,0.5),0 6px 12px rgba(0,0,0,0.4);
+}
+.ctrl-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,0.08) 0%,transparent 55%);
+  border-radius:10px;pointer-events:none;
+}
+.ctrl-btn:hover{filter:brightness(1.18);}
+.ctrl-btn:active{
+  transform:translateY(3px);
+  box-shadow:0 1px 0 rgba(0,0,0,0.5),0 2px 4px rgba(0,0,0,0.4);
+  filter:brightness(0.92);
+}
+.ctrl-btn .btn-icon{font-size:20px;line-height:1;position:relative;z-index:1;}
+.ctrl-btn .btn-lbl{
+  font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  line-height:1;position:relative;z-index:1;
+}
+
+/* Stream Start — bright green */
+.btn-start-stream{background:#16a34a;color:#fff;}
+.btn-start-stream.active{background:#374151;color:#6b7280;box-shadow:none;pointer-events:none;}
+
+/* Stream Stop — bright red */
+.btn-stop-stream{background:#374151;color:#6b7280;box-shadow:none;}
+.btn-stop-stream.active{background:#dc2626;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,0.5),0 6px 12px rgba(0,0,0,0.4);}
+
+/* Record */
+.btn-record{background:#374151;color:#9ca3af;}
+.btn-record.active{
+  background:#b91c1c;color:#fff;
+  animation:recpulse 1.2s infinite;
+}
+@keyframes recpulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.25)}}
+
+/* Mic */
+.btn-mute{background:#1d4ed8;color:#fff;}
+.btn-mute.active{background:#92400e;color:#fbbf24;}
+
+/* Virtual cam */
+.btn-virtual{background:#374151;color:#9ca3af;}
+.btn-virtual.active{background:#0369a1;color:#fff;}
+
+/* ── SCENE DECK KEYS ── */
+.scenes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+.scene-btn{
+  background:#1e2433;border:none;border-radius:10px;
+  padding:0;cursor:pointer;font-family:'DM Sans',sans-serif;
+  font-size:9px;font-weight:700;color:#94a3b8;text-align:center;
+  transition:transform 0.08s,filter 0.08s,box-shadow 0.08s;
+  word-break:break-word;line-height:1.3;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  height:66px;text-transform:uppercase;letter-spacing:0.05em;
+  box-shadow:0 4px 0 rgba(0,0,0,0.5),0 6px 12px rgba(0,0,0,0.35);
+  position:relative;overflow:hidden;
+}
+.scene-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,0.06) 0%,transparent 55%);
+  pointer-events:none;border-radius:10px;
+}
+.scene-btn .scene-icon{font-size:18px;position:relative;z-index:1;}
+.scene-btn span:last-child{position:relative;z-index:1;padding:0 4px;}
+.scene-btn:hover{filter:brightness(1.3);}
+.scene-btn:active{
+  transform:translateY(3px);
+  box-shadow:0 1px 0 rgba(0,0,0,0.5),0 2px 4px rgba(0,0,0,0.35);
+  filter:brightness(0.9);
+}
+.scene-btn.active{
+  background:#4c1d95;color:#ddd6fe;
+  box-shadow:0 4px 0 rgba(0,0,0,0.5),0 0 16px rgba(139,92,246,0.5),0 6px 12px rgba(0,0,0,0.35);
+}
+
+/* ── AUDIO MIXER ── */
+.audio-row{display:flex;align-items:center;gap:7px;padding:5px 8px;
+  background:var(--surface);border:1px solid var(--border);border-radius:7px;margin-bottom:4px;}
+.audio-icon{font-size:13px;flex-shrink:0;}
+.audio-name{font-size:10px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);}
+.audio-vol{flex:1;height:3px;-webkit-appearance:none;appearance:none;
+  background:var(--surface3);border-radius:2px;outline:none;cursor:pointer;min-width:0;}
+.audio-vol::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;
+  border-radius:50%;background:var(--purple);cursor:pointer;box-shadow:0 0 4px rgba(139,92,246,0.4);}
+.audio-mute-btn{background:transparent;border:none;color:var(--text3);cursor:pointer;
+  font-size:13px;padding:2px 4px;border-radius:4px;transition:all 0.12s;flex-shrink:0;}
+.audio-mute-btn:hover{background:var(--surface3);}
+.audio-mute-btn.muted{color:var(--red);}
+
+/* ── NO CONNECTION ── */
+#noConn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;padding:20px 14px;text-align:center;
+}
+.no-conn-icon{font-size:36px;opacity:0.25;}
+.no-conn-title{font-size:12px;font-weight:600;color:var(--text2);}
+.no-conn-sub{font-size:10px;color:var(--text3);line-height:1.6;}
+.no-conn-hint{font-size:9px;color:var(--text3);font-family:'Geist Mono',monospace;
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:6px 10px;line-height:1.9;text-align:left;}
+</style>
+</head>
+<body>
+
+<!-- TITLEBAR -->
+<div id="titlebar">
+  <div class="tb-icon">
+    <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="white" stroke-width="2"/><circle cx="10" cy="10" r="3"/></svg>
+  </div>
+  <span class="tb-title">OBS Deck</span>
+  <button class="tb-close" onclick="window.close()">✕</button>
+</div>
+
+<!-- CONNECTION BAR -->
+<div id="connBar">
+  <div class="conn-row">
+    <input class="conn-input" id="wsHost" type="text" placeholder="localhost:4455" value="localhost:4455" />
+    <input class="conn-input" id="wsPass" type="password" placeholder="password (optional)" style="width:110px;flex:none;" />
+    <button class="conn-btn" id="connBtn" onclick="toggleConnect()">Connect</button>
+  </div>
+  <div class="conn-status">
+    <div class="conn-dot" id="connDot"></div>
+    <span class="conn-label" id="connLabel">Not connected — enter host and click Connect</span>
+  </div>
+</div>
+
+<!-- SCROLL AREA -->
+<div id="scrollArea">
+
+  <!-- NOT CONNECTED STATE -->
+  <div id="noConn">
+    <div class="no-conn-icon">🎬</div>
+    <div class="no-conn-title">OBS WebSocket</div>
+    <div class="no-conn-sub">Connect to OBS to control scenes,<br>streaming and recording.</div>
+    <div class="no-conn-hint">
+      In OBS: Tools → WebSocket Server Settings<br>
+      Enable WebSocket → port 4455<br>
+      Set a password (optional)
+    </div>
+  </div>
+
+  <!-- CONNECTED STATE -->
+  <div id="deckContent" style="display:none;">
+
+    <!-- STATS -->
+    <div class="section">
+      <div class="section-lbl">Stream Stats</div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-val green" id="statViewers">—</div>
+          <div class="stat-lbl">viewers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="statUptime">—</div>
+          <div class="stat-lbl">uptime</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="statFps">—</div>
+          <div class="stat-lbl">fps</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STREAM CONTROLS -->
+    <div class="section">
+      <div class="section-lbl">Controls</div>
+      <!-- Stream: Start + Stop -->
+      <div class="stream-row">
+        <button class="ctrl-btn btn-start-stream" id="btnStartStream" onclick="startStream()">
+          <span class="btn-icon">📡</span>
+          <span class="btn-lbl">Start Stream</span>
+        </button>
+        <button class="ctrl-btn btn-stop-stream" id="btnStopStream" onclick="stopStream()">
+          <span class="btn-icon">⏹</span>
+          <span class="btn-lbl">Stop Stream</span>
+        </button>
+      </div>
+      <!-- Record + Mic + VCam -->
+      <div class="controls-grid">
+        <button class="ctrl-btn btn-record" id="btnRecord" onclick="toggleRecord()">
+          <span class="btn-icon">⏺</span>
+          <span class="btn-lbl" id="btnRecordLbl">Record</span>
+        </button>
+        <button class="ctrl-btn btn-mute" id="btnMic" onclick="toggleMic()">
+          <span class="btn-icon">🎙️</span>
+          <span class="btn-lbl" id="btnMicLbl">Mic On</span>
+        </button>
+        <button class="ctrl-btn btn-virtual" id="btnVcam" onclick="toggleVirtualCam()">
+          <span class="btn-icon">📷</span>
+          <span class="btn-lbl" id="btnVcamLbl">VCam</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SCENES -->
+    <div class="section">
+      <div class="section-lbl">Scenes</div>
+      <div class="scenes-grid" id="scenesGrid">
+        <div style="color:var(--text3);font-size:11px;grid-column:span 2;padding:8px 0;">Loading scenes...</div>
+      </div>
+    </div>
+
+    <!-- AUDIO -->
+    <div class="section">
+      <div class="section-lbl">Audio Sources</div>
+      <div id="audioMixer">
+        <div style="color:var(--text3);font-size:11px;padding:8px 0;">Loading audio...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+// ── OBS WebSocket v5 client ──
+let ws = null;
+let connected = false;
+let msgId = 1;
+let pendingRequests = {};
+let streamActive = false;
+let recordActive = false;
+let virtualCamActive = false;
+let micMuted = false;
+let scenes = [];
+let currentScene = '';
+let uptimeStart = null;
+let uptimeInterval = null;
+let statsInterval = null;
+
+// Load saved settings
+const savedHost = localStorage.getItem('obsHost') || 'localhost:4455';
+const savedPass = localStorage.getItem('obsPass') || '';
+document.getElementById('wsHost').value = savedHost;
+document.getElementById('wsPass').value = savedPass;
+
+function setConnStatus(state, msg) {
+  const dot = document.getElementById('connDot');
+  const lbl = document.getElementById('connLabel');
+  const btn = document.getElementById('connBtn');
+  dot.className = 'conn-dot ' + state;
+  lbl.textContent = msg;
+  lbl.style.color = state === 'connected' ? 'var(--green)' : state === 'error' ? 'var(--red)' : 'var(--text3)';
+  btn.textContent = connected ? 'Disconnect' : 'Connect';
+}
+
+function toggleConnect() {
+  if (connected) disconnect();
+  else connect();
+}
+
+function connect() {
+  const host = document.getElementById('wsHost').value.trim() || 'localhost:4455';
+  const pass = document.getElementById('wsPass').value.trim();
+  localStorage.setItem('obsHost', host);
+  localStorage.setItem('obsPass', pass);
+
+  setConnStatus('connecting', 'Connecting to ' + host + '...');
+
+  const url = 'ws://' + host;
+  try {
+    ws = new WebSocket(url);
+  } catch(e) {
+    setConnStatus('error', 'Invalid address: ' + host);
+    return;
+  }
+
+  ws.onopen = () => {
+    // OBS WebSocket v5 sends Hello on connect
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      handleMessage(msg);
+    } catch(e) {}
+  };
+
+  ws.onerror = () => {
+    setConnStatus('error', 'Connection failed — is OBS running?');
+    connected = false;
+  };
+
+  ws.onclose = () => {
+    if (connected) {
+      setConnStatus('error', 'Disconnected from OBS');
+      connected = false;
+      showNoConn();
+    }
+    clearIntervals();
+  };
+}
+
+function disconnect() {
+  if (ws) { ws.close(); ws = null; }
+  connected = false;
+  setConnStatus('', 'Disconnected');
+  showNoConn();
+  clearIntervals();
+}
+
+function clearIntervals() {
+  if (uptimeInterval) { clearInterval(uptimeInterval); uptimeInterval = null; }
+  if (statsInterval) { clearInterval(statsInterval); statsInterval = null; }
+}
+
+function showNoConn() {
+  document.getElementById('noConn').style.display = 'flex';
+  document.getElementById('deckContent').style.display = 'none';
+}
+function showDeck() {
+  document.getElementById('noConn').style.display = 'none';
+  document.getElementById('deckContent').style.display = 'block';
+}
+
+// ── OBS WebSocket v5 protocol ──
+function sendRequest(type, data, cb) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  const id = String(msgId++);
+  if (cb) pendingRequests[id] = cb;
+  ws.send(JSON.stringify({
+    op: 6, // Request
+    d: { requestType: type, requestId: id, requestData: data || {} }
+  }));
+}
+
+function handleMessage(msg) {
+  const op = msg.op;
+  const d = msg.d;
+
+  if (op === 0) {
+    // Hello — authenticate
+    const auth = d.authentication;
+    if (auth) {
+      const pass = document.getElementById('wsPass').value.trim();
+      if (!pass) {
+        setConnStatus('error', 'OBS requires a password');
+        ws.close(); return;
+      }
+      // Generate auth string: base64(sha256(pass + salt) + challenge)
+      generateAuth(pass, auth.salt, auth.challenge).then(authStr => {
+        ws.send(JSON.stringify({ op: 1, d: { rpcVersion: 1, authentication: authStr, eventSubscriptions: 33 } }));
+      });
+    } else {
+      ws.send(JSON.stringify({ op: 1, d: { rpcVersion: 1, eventSubscriptions: 33 } }));
+    }
+  }
+
+  else if (op === 2) {
+    // Identified = connected!
+    connected = true;
+    setConnStatus('connected', 'Connected to OBS');
+    document.getElementById('connBtn').textContent = 'Disconnect';
+    showDeck();
+    loadInitialState();
+    startStatsPolling();
+  }
+
+  else if (op === 7) {
+    // RequestResponse
+    const id = d.requestId;
+    if (pendingRequests[id]) {
+      pendingRequests[id](d.responseData, d.requestStatus);
+      delete pendingRequests[id];
+    }
+  }
+
+  else if (op === 5) {
+    // Event
+    handleEvent(d.eventType, d.eventData);
+  }
+}
+
+async function generateAuth(password, salt, challenge) {
+  const enc = new TextEncoder();
+  const step1 = await crypto.subtle.digest('SHA-256', enc.encode(password + salt));
+  const b64step1 = btoa(String.fromCharCode(...new Uint8Array(step1)));
+  const step2 = await crypto.subtle.digest('SHA-256', enc.encode(b64step1 + challenge));
+  return btoa(String.fromCharCode(...new Uint8Array(step2)));
+}
+
+function handleEvent(type, data) {
+  if (type === 'StreamStateChanged') {
+    streamActive = data.outputActive;
+    updateStreamBtn();
+    if (streamActive) startUptime();
+    else stopUptime();
+  }
+  else if (type === 'RecordStateChanged') {
+    recordActive = data.outputActive;
+    updateRecordBtn();
+  }
+  else if (type === 'VirtualcamStateChanged') {
+    virtualCamActive = data.outputActive;
+    updateVcamBtn();
+  }
+  else if (type === 'CurrentProgramSceneChanged') {
+    currentScene = data.sceneName;
+    renderScenes();
+  }
+  else if (type === 'SceneListChanged') {
+    scenes = data.scenes || [];
+    renderScenes();
+  }
+  else if (type === 'InputMuteStateChanged') {
+    if (data.inputName && data.inputName.toLowerCase().includes('mic')) {
+      micMuted = data.inputMuted;
+      updateMicBtn();
+    }
+    updateAudioMixer();
+  }
+}
+
+function loadInitialState() {
+  // Get stream status
+  sendRequest('GetStreamStatus', {}, (r) => {
+    if (r) {
+      streamActive = r.outputActive;
+      updateStreamBtn();
+      if (streamActive) startUptime(r.outputTimecode);
+    }
+  });
+  // Get record status
+  sendRequest('GetRecordStatus', {}, (r) => {
+    if (r) { recordActive = r.outputActive; updateRecordBtn(); }
+  });
+  // Get virtual cam status
+  sendRequest('GetVirtualCamStatus', {}, (r) => {
+    if (r) { virtualCamActive = r.outputActive; updateVcamBtn(); }
+  });
+  // Get scenes
+  sendRequest('GetSceneList', {}, (r) => {
+    if (r) {
+      scenes = r.scenes || [];
+      currentScene = r.currentProgramSceneName || '';
+      renderScenes();
+    }
+  });
+  // Get audio sources
+  sendRequest('GetInputList', {}, (r) => {
+    if (r && r.inputs) renderAudioMixer(r.inputs);
+  });
+}
+
+function startStatsPolling() {
+  statsInterval = setInterval(() => {
+    if (!connected) return;
+    sendRequest('GetStats', {}, (r) => {
+      if (r) {
+        document.getElementById('statFps').textContent = Math.round(r.activeFps || 0);
+      }
+    });
+  }, 3000);
+}
+
+// ── STREAM CONTROLS ──
+function startStream() {
+  if (!connected || streamActive) return;
+  sendRequest('StartStream', {}, () => {});
+}
+function stopStream() {
+  if (!connected) return;
+  sendRequest('StopStream', {}, () => {});
+}
+function toggleRecord() {
+  if (!connected) return;
+  sendRequest(recordActive ? 'StopRecord' : 'StartRecord', {}, () => {});
+}
+function toggleMic() {
+  if (!connected) return;
+  // Find mic input and toggle mute
+  sendRequest('GetInputList', {}, (r) => {
+    if (!r) return;
+    const mic = r.inputs.find(i => i.inputName.toLowerCase().includes('mic') || i.inputKind.includes('wasapi_input'));
+    if (mic) {
+      sendRequest('ToggleInputMute', { inputName: mic.inputName }, (res) => {
+        micMuted = res?.inputMuted ?? !micMuted;
+        updateMicBtn();
+      });
+    }
+  });
+}
+function toggleVirtualCam() {
+  if (!connected) return;
+  sendRequest('ToggleVirtualCam', {}, (r) => {
+    if (r) { virtualCamActive = r.outputActive; updateVcamBtn(); }
+  });
+}
+function switchScene(name) {
+  if (!connected) return;
+  sendRequest('SetCurrentProgramScene', { sceneName: name }, () => {
+    currentScene = name;
+    renderScenes();
+  });
+}
+
+// ── UPDATE BUTTONS ──
+function updateStreamBtn() {
+  const btnStart = document.getElementById('btnStartStream');
+  const btnStop  = document.getElementById('btnStopStream');
+  if (!btnStart || !btnStop) return;
+  // Start: grayed out when streaming, active when not
+  btnStart.classList.toggle('active', streamActive);
+  // Stop: grayed out when not streaming, active when streaming
+  btnStop.classList.toggle('active', streamActive);
+}
+function updateRecordBtn() {
+  const btn = document.getElementById('btnRecord');
+  const lbl = document.getElementById('btnRecordLbl');
+  btn.classList.toggle('active', recordActive);
+  lbl.textContent = recordActive ? 'Stop Rec' : 'Record';
+}
+function updateMicBtn() {
+  const btn = document.getElementById('btnMic');
+  const lbl = document.getElementById('btnMicLbl');
+  btn.classList.toggle('active', micMuted);
+  lbl.textContent = micMuted ? 'Mic Muted' : 'Mic On';
+  btn.querySelector('.btn-icon').textContent = micMuted ? '🔇' : '🎙️';
+}
+function updateVcamBtn() {
+  const btn = document.getElementById('btnVcam');
+  const lbl = document.getElementById('btnVcamLbl');
+  btn.classList.toggle('active', virtualCamActive);
+  lbl.textContent = virtualCamActive ? 'VCam On' : 'Virtual Cam';
+}
+
+// ── SCENES ──
+const SCENE_ICONS = ['🎬','🎮','💬','📸','🎵','🔴','🎯','⭐','🌟','🎭','📺','🎤'];
+const SCENE_ORDER = ['intro', 'dcs alles opnemen', 'brb', 'end'];
+
+function renderScenes() {
+  const grid = document.getElementById('scenesGrid');
+  grid.innerHTML = '';
+  if (!scenes.length) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:11px;grid-column:span 2;padding:4px 0;">No scenes found</div>';
+    return;
+  }
+  const sorted = [...scenes].sort((a, b) => {
+    const ai = SCENE_ORDER.findIndex(o => a.sceneName.toLowerCase().includes(o));
+    const bi = SCENE_ORDER.findIndex(o => b.sceneName.toLowerCase().includes(o));
+    const aRank = ai === -1 ? 999 : ai;
+    const bRank = bi === -1 ? 999 : bi;
+    return aRank - bRank;
+  });
+  sorted.forEach((s, i) => {
+    const name = s.sceneName;
+    const btn = document.createElement('button');
+    btn.className = 'scene-btn' + (name === currentScene ? ' active' : '');
+    btn.innerHTML = `<span class="scene-icon">${SCENE_ICONS[i % SCENE_ICONS.length]}</span><span>${name}</span>`;
+    btn.onclick = () => switchScene(name);
+    grid.appendChild(btn);
+  });
+}
+
+// ── AUDIO MIXER ──
+function renderAudioMixer(inputs) {
+  const mixer = document.getElementById('audioMixer');
+  mixer.innerHTML = '';
+  const audioTypes = ['wasapi_input_capture','wasapi_output_capture','pulse_input_capture','pulse_output_capture','coreaudio_input_capture','coreaudio_output_capture','browser_source'];
+  const audioInputs = inputs.filter(i => audioTypes.some(t => i.inputKind.includes(t.split('_')[0])) || i.inputKind.includes('audio'));
+  if (!audioInputs.length) {
+    // Show all inputs if none detected as audio
+    inputs.slice(0, 4).forEach(i => addAudioRow(mixer, i));
+  } else {
+    audioInputs.slice(0, 6).forEach(i => addAudioRow(mixer, i));
+  }
+}
+
+function addAudioRow(container, input) {
+  const name = input.inputName;
+  const isInput = input.inputKind.includes('input') || input.inputKind.includes('mic');
+  const icon = isInput ? '🎙️' : '🔊';
+  const row = document.createElement('div');
+  row.className = 'audio-row';
+  row.id = 'audio_' + name.replace(/\s/g,'_');
+  row.innerHTML = `
+    <span class="audio-icon">${icon}</span>
+    <span class="audio-name">${name}</span>
+    <input class="audio-vol" type="range" min="0" max="100" value="100"
+      oninput="setVolume('${name.replace(/'/g,"\\'")}', this.value)" />
+    <button class="audio-mute-btn" id="mute_${name.replace(/\s/g,'_')}"
+      onclick="muteInput('${name.replace(/'/g,"\\'")}')">🔊</button>
+  `;
+  container.appendChild(row);
+  // Get current volume
+  sendRequest('GetInputVolume', { inputName: name }, (r) => {
+    if (r) {
+      const vol = Math.round((r.inputVolumeMul || 1) * 100);
+      const slider = row.querySelector('.audio-vol');
+      if (slider) slider.value = vol;
+    }
+  });
+  // Get mute state
+  sendRequest('GetInputMute', { inputName: name }, (r) => {
+    if (r) updateAudioMuteBtn(name, r.inputMuted);
+  });
+}
+
+function setVolume(name, val) {
+  sendRequest('SetInputVolume', { inputName: name, inputVolumeMul: val / 100 }, () => {});
+}
+function muteInput(name) {
+  sendRequest('ToggleInputMute', { inputName: name }, (r) => {
+    if (r) updateAudioMuteBtn(name, r.inputMuted);
+  });
+}
+function updateAudioMuteBtn(name, muted) {
+  const btn = document.getElementById('mute_' + name.replace(/\s/g,'_'));
+  if (btn) { btn.textContent = muted ? '🔇' : '🔊'; btn.classList.toggle('muted', muted); }
+}
+function updateAudioMixer() {
+  sendRequest('GetInputList', {}, (r) => {
+    if (r && r.inputs) renderAudioMixer(r.inputs);
+  });
+}
+
+// ── UPTIME ──
+function startUptime(timecode) {
+  uptimeStart = Date.now();
+  if (timecode) {
+    const parts = timecode.split(':');
+    const secs = parseInt(parts[0]||0)*3600 + parseInt(parts[1]||0)*60 + parseFloat(parts[2]||0);
+    uptimeStart = Date.now() - secs * 1000;
+  }
+  uptimeInterval = setInterval(updateUptime, 1000);
+  updateUptime();
+}
+function stopUptime() {
+  clearInterval(uptimeInterval);
+  document.getElementById('statUptime').textContent = '—';
+}
+function updateUptime() {
+  if (!uptimeStart) return;
+  const s = Math.floor((Date.now() - uptimeStart) / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  document.getElementById('statUptime').textContent =
+    (h ? h + ':' : '') + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+}
+</script>
+</body>
+</html>
