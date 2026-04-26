@@ -440,4 +440,4 @@ Stream Cockpit is made by **Mr. Maverick** and is free to use.
 
 ---
 
-*Stream Cockpit v2.3.1 — built for Twitch streamers who want to have acces directly to all tools*
+*Stream Cockpit v2.3.2— built for Twitch streamers who want to have acces directly to all tools*
