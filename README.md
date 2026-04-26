@@ -1,4 +1,4 @@
-** Note: Only use the setup.exe it has all the files it needed. Manual needs to be updated! ** 
+**Note: Only use the setup.exe found under Releases. It contains all the files needed. The manual needs to be updated!** 
 
 Example screenshots: 
 <img width="1741" height="1109" alt="image" src="https://github.com/user-attachments/assets/581ce03e-4a85-49bf-a628-42e12fc22bf1" />
