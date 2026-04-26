@@ -1,5 +1,5 @@
 Example screenshots: 
-<img width="1398" height="904" alt="image" src="https://github.com/user-attachments/assets/fcdd3b20-f859-4cab-8925-00c4e8157731" />
+<img width="1741" height="1109" alt="image" src="https://github.com/user-attachments/assets/581ce03e-4a85-49bf-a628-42e12fc22bf1" />
 <img width="1551" height="673" alt="image" src="https://github.com/user-attachments/assets/a98aef9e-30a0-4aa9-bb46-621c9dcd420d" />
 <img width="320" height="798" alt="image" src="https://github.com/user-attachments/assets/1b2f6d01-4ba9-4d90-8f59-68e76bf34c51" />
 <img width="308" height="266" alt="image" src="https://github.com/user-attachments/assets/75284efd-fa4d-4de2-8db0-4e61fe41eb30" />
