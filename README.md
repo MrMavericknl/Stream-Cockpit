@@ -2,7 +2,8 @@
 
 Example screenshots: 
 The Dasboard.
-<img width="1737" height="1113" alt="image" src="https://github.com/user-attachments/assets/57a7baf0-57cb-422e-9a83-b129f5c62f9c" />
+<img width="1388" height="890" alt="image" src="https://github.com/user-attachments/assets/b7942f93-9f36-4aa8-95eb-925d63b55e07" />
+
 
 
 OBS Deck.
