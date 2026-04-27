@@ -1,4 +1,5 @@
-**Note: Only use the setup.exe found under Releases. It contains all the files needed. The manual needs to be updated!** 
+**Note: Only use the setup.exe found under Releases. It contains all the files needed. The manual needs to be updated!**
+https://discord.com/invite/4DUNbYhaYR
 
 Example screenshots: 
 The Dasboard.
