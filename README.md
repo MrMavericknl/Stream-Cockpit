@@ -1,5 +1,5 @@
 **Note: Only use the setup.exe found under Releases. It contains all the files needed. The manual needs to be updated!**
-https://discord.com/invite/4DUNbYhaYR
+
 
 Example screenshots: 
 The Dasboard.
@@ -1151,6 +1151,7 @@ Ein einklappbarer Bereich in der rechten Seitenleiste mit Schnelllinks zu nützl
 ## DE 15. Das Projekt unterstützen
 
 Stream Cockpit wurde von **Mr. Maverick** erstellt und ist kostenlos nutzbar.
+our discord: https://discord.com/invite/4DUNbYhaYR
 
 ---
 
